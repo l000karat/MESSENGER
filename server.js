@@ -47,10 +47,15 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
   const ext = path.extname(req.file.originalname).toLowerCase();
   const imageExt = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
   const videoExt = [".mp4", ".webm", ".mov", ".mkv"];
+  const audioExt = [".mp3", ".wav", ".ogg", ".m4a", ".aac", ".webm"];
+  const desiredType = String(req.body?.desiredType || "").toLowerCase();
   let mediaType = "file";
 
-  if (imageExt.includes(ext)) mediaType = "image";
-  if (videoExt.includes(ext)) mediaType = "video";
+  if (imageExt.includes(ext) || req.file.mimetype.startsWith("image/")) mediaType = "image";
+  if (audioExt.includes(ext) || req.file.mimetype.startsWith("audio/")) mediaType = "audio";
+  if (videoExt.includes(ext) || req.file.mimetype.startsWith("video/")) mediaType = "video";
+  if (desiredType === "voice") mediaType = "voice";
+  if (desiredType === "circle") mediaType = "circle";
 
   return res.json({
     url: `/uploads/${req.file.filename}`,

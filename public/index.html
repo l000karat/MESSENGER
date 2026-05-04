@@ -92,6 +92,9 @@
       <button class="icon-btn" title="Ещё">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
       </button>
+      <button class="icon-btn" title="Личный профиль" id="profileBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </button>
     </div>
   </header>
 
@@ -140,9 +143,17 @@
         ></textarea>
       </div>
 
-      <label class="icon-btn emoji-btn" title="Эмодзи">
+      <button class="icon-btn emoji-btn" title="Эмодзи" id="emojiToggle" type="button">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-      </label>
+      </button>
+
+      <button class="icon-btn" id="voiceBtn" title="Голосовое сообщение" type="button">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
+      </button>
+
+      <button class="icon-btn" id="circleBtn" title="Записать кружок" type="button">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
 
       <button class="send-btn" id="sendBtn" title="Отправить">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -170,6 +181,32 @@
 
 <!-- TOAST -->
 <div class="toast-container" id="toastContainer"></div>
+
+<!-- EMOJI PICKER -->
+<div class="emoji-picker hidden" id="emojiPicker"></div>
+
+<!-- PROFILE MODAL -->
+<div class="profile-modal hidden" id="profileModal">
+  <div class="profile-card">
+    <h3>Личный профиль</h3>
+    <label class="profile-field">
+      <span>Имя</span>
+      <input type="text" id="profileName" maxlength="30" />
+    </label>
+    <label class="profile-field">
+      <span>Статус</span>
+      <input type="text" id="profileStatus" maxlength="60" placeholder="Например: На связи" />
+    </label>
+    <label class="profile-field">
+      <span>О себе</span>
+      <textarea id="profileBio" maxlength="160" rows="3" placeholder="Коротко о себе"></textarea>
+    </label>
+    <div class="profile-actions">
+      <button id="profileCancel" class="profile-btn ghost" type="button">Отмена</button>
+      <button id="profileSave" class="profile-btn primary" type="button">Сохранить</button>
+    </div>
+  </div>
+</div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="app.js"></script>

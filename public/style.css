@@ -673,6 +673,20 @@ body {
   display: block;
 }
 
+.msg-circle {
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #000;
+  display: block;
+}
+
+.msg-audio {
+  min-width: 220px;
+  max-width: 100%;
+}
+
 .msg-file {
   display: flex;
   align-items: center;
@@ -806,6 +820,11 @@ body {
   height: 36px;
   flex-shrink: 0;
   cursor: pointer;
+}
+
+.icon-btn.recording {
+  background: var(--danger);
+  color: #fff;
 }
 
 .textarea-wrap {
@@ -985,6 +1004,125 @@ body {
 
 @keyframes toastOut {
   to { opacity: 0; transform: translateY(8px) scale(0.95); }
+}
+
+/* =====================================================
+   EMOJI PICKER & PROFILE
+   ===================================================== */
+
+.emoji-picker {
+  position: fixed;
+  bottom: 102px;
+  right: 24px;
+  width: 248px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-strong);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  z-index: 60;
+  box-shadow: 0 12px 38px rgba(0,0,0,0.35);
+}
+
+.emoji-picker.hidden {
+  display: none;
+}
+
+.emoji-item {
+  border: none;
+  border-radius: 10px;
+  height: 36px;
+  font-size: 19px;
+  cursor: pointer;
+  background: var(--bg-tertiary);
+  transition: transform var(--t-fast), background var(--t-fast);
+}
+
+.emoji-item:hover {
+  transform: scale(1.08);
+  background: var(--bg-hover);
+}
+
+.profile-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.58);
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.profile-modal.hidden {
+  display: none;
+}
+
+.profile-card {
+  width: min(100%, 440px);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profile-card h3 {
+  font-size: 18px;
+}
+
+.profile-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.profile-field span {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.profile-field input,
+.profile-field textarea {
+  border: 1px solid var(--border);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: var(--font-body);
+}
+
+.profile-field textarea {
+  resize: vertical;
+}
+
+.profile-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.profile-btn {
+  border: none;
+  border-radius: 10px;
+  height: 36px;
+  padding: 0 14px;
+  cursor: pointer;
+}
+
+.profile-btn.ghost {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.profile-btn.primary {
+  background: var(--accent);
+  color: #fff;
 }
 
 /* =====================================================

@@ -27,6 +27,17 @@ const lightbox      = document.getElementById('lightbox');
 const lightboxClose = document.getElementById('lightboxClose');
 const lightboxContent = document.getElementById('lightboxContent');
 const toastContainer = document.getElementById('toastContainer');
+const emojiToggle = document.getElementById('emojiToggle');
+const emojiPicker = document.getElementById('emojiPicker');
+const voiceBtn = document.getElementById('voiceBtn');
+const circleBtn = document.getElementById('circleBtn');
+const profileBtn = document.getElementById('profileBtn');
+const profileModal = document.getElementById('profileModal');
+const profileName = document.getElementById('profileName');
+const profileStatus = document.getElementById('profileStatus');
+const profileBio = document.getElementById('profileBio');
+const profileSave = document.getElementById('profileSave');
+const profileCancel = document.getElementById('profileCancel');
 
 // ── State ─────────────────────────────────────────────
 let pendingMedia = null; // { url, mediaType, originalName, file }
@@ -34,6 +45,13 @@ let isDark = true;
 let onlineUsers = 1;
 let lastSender = null;
 let lastMsgTime = null;
+let voiceRecorder = null;
+let voiceStream = null;
+let circleRecorder = null;
+let circleStream = null;
+let profile = { name: 'Гость', status: 'На связи', bio: '' };
+
+const emojiSet = ['😀','😁','😂','🤣','😊','😍','😘','😎','🤔','😭','😡','👍','🔥','🎉','❤️','💬','👋','🙏','😴','🤝'];
 
 // ── Theme ─────────────────────────────────────────────
 function toggleTheme() {
@@ -78,13 +96,33 @@ messageInput.addEventListener('keydown', (e) => {
 });
 
 sendBtn.addEventListener('click', sendMessage);
+voiceBtn.addEventListener('click', toggleVoiceRecording);
+circleBtn.addEventListener('click', toggleCircleRecording);
+emojiToggle.addEventListener('click', () => {
+  emojiPicker.classList.toggle('hidden');
+});
+profileBtn.addEventListener('click', openProfileModal);
+profileCancel.addEventListener('click', closeProfileModal);
+profileSave.addEventListener('click', saveProfile);
 
 // ── Username persist ──────────────────────────────────
 const savedUser = localStorage.getItem('pulse-username');
 if (savedUser) usernameInput.value = savedUser;
 usernameInput.addEventListener('change', () => {
-  localStorage.setItem('pulse-username', usernameInput.value || 'Гость');
+  const cleanName = (usernameInput.value || 'Гость').trim().slice(0, 30);
+  profile.name = cleanName;
+  localStorage.setItem('pulse-username', cleanName);
+  localStorage.setItem('pulse-profile', JSON.stringify(profile));
 });
+
+const savedProfile = localStorage.getItem('pulse-profile');
+if (savedProfile) {
+  try {
+    profile = { ...profile, ...JSON.parse(savedProfile) };
+  } catch (_err) {}
+}
+usernameInput.value = profile.name || usernameInput.value || 'Гость';
+onlineCount.textContent = `1 участник онлайн • ${profile.status || 'На связи'}`;
 
 // ── File upload ───────────────────────────────────────
 fileInput.addEventListener('change', async (e) => {
@@ -143,6 +181,100 @@ function clearMedia() {
   mediaPreviewSize.textContent = '';
 }
 
+async function uploadMediaFile(file, desiredType) {
+  const progressEl = showUploadProgress(file.name);
+  const formData = new FormData();
+  formData.append('file', file);
+  if (desiredType) formData.append('desiredType', desiredType);
+
+  try {
+    const res = await fetch('/api/upload', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    return data;
+  } finally {
+    removeUploadProgress(progressEl);
+  }
+}
+
+async function toggleVoiceRecording() {
+  if (voiceRecorder && voiceRecorder.state === 'recording') {
+    voiceRecorder.stop();
+    voiceBtn.classList.remove('recording');
+    showToast('Обработка голосового...');
+    return;
+  }
+
+  try {
+    voiceStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const chunks = [];
+    voiceRecorder = new MediaRecorder(voiceStream);
+    voiceRecorder.ondataavailable = (ev) => ev.data?.size && chunks.push(ev.data);
+    voiceRecorder.onstop = async () => {
+      const blob = new Blob(chunks, { type: 'audio/webm' });
+      const file = new File([blob], `voice-${Date.now()}.webm`, { type: blob.type });
+      try {
+        const data = await uploadMediaFile(file, 'voice');
+        pendingMedia = { url: data.url, mediaType: data.mediaType || 'voice', originalName: data.originalName };
+        mediaPreviewName.textContent = 'Голосовое сообщение';
+        mediaPreviewSize.textContent = formatSize(file.size);
+        mediaPreviewThumb.innerHTML = '🎤';
+        mediaPreviewBar.classList.remove('hidden');
+        showToast('Голосовое готово к отправке');
+      } catch (_err) {
+        showToast('Не удалось загрузить голосовое');
+      } finally {
+        if (voiceStream) voiceStream.getTracks().forEach((t) => t.stop());
+        voiceStream = null;
+      }
+    };
+    voiceRecorder.start();
+    voiceBtn.classList.add('recording');
+    showToast('Идет запись голосового...');
+  } catch (_err) {
+    showToast('Нет доступа к микрофону');
+  }
+}
+
+async function toggleCircleRecording() {
+  if (circleRecorder && circleRecorder.state === 'recording') {
+    circleRecorder.stop();
+    circleBtn.classList.remove('recording');
+    showToast('Обработка кружка...');
+    return;
+  }
+
+  try {
+    circleStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: { facingMode: 'user' } });
+    const chunks = [];
+    circleRecorder = new MediaRecorder(circleStream);
+    circleRecorder.ondataavailable = (ev) => ev.data?.size && chunks.push(ev.data);
+    circleRecorder.onstop = async () => {
+      const blob = new Blob(chunks, { type: 'video/webm' });
+      const file = new File([blob], `circle-${Date.now()}.webm`, { type: blob.type });
+      try {
+        const data = await uploadMediaFile(file, 'circle');
+        pendingMedia = { url: data.url, mediaType: data.mediaType || 'circle', originalName: data.originalName };
+        mediaPreviewName.textContent = 'Видеокружок';
+        mediaPreviewSize.textContent = formatSize(file.size);
+        mediaPreviewThumb.innerHTML = '◉';
+        mediaPreviewBar.classList.remove('hidden');
+        showToast('Кружок готов к отправке');
+      } catch (_err) {
+        showToast('Не удалось загрузить кружок');
+      } finally {
+        if (circleStream) circleStream.getTracks().forEach((t) => t.stop());
+        circleStream = null;
+      }
+    };
+    circleRecorder.start();
+    circleBtn.classList.add('recording');
+    showToast('Запись кружка запущена...');
+  } catch (_err) {
+    showToast('Нет доступа к камере');
+  }
+}
+
 // ── Send message ──────────────────────────────────────
 function sendMessage() {
   const text = messageInput.value.trim();
@@ -163,6 +295,55 @@ function sendMessage() {
   messageInput.style.height = 'auto';
   charCount.textContent = '0 / 2000';
   clearMedia();
+}
+
+function initEmojiPicker() {
+  emojiPicker.innerHTML = emojiSet
+    .map((emoji) => `<button class="emoji-item" data-emoji="${emoji}">${emoji}</button>`)
+    .join('');
+}
+
+emojiPicker.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-emoji]');
+  if (!btn) return;
+  messageInput.value += btn.dataset.emoji;
+  charCount.textContent = `${messageInput.value.length} / 2000`;
+  emojiPicker.classList.add('hidden');
+  messageInput.focus();
+});
+
+document.addEventListener('click', (e) => {
+  if (!emojiPicker.contains(e.target) && !e.target.closest('#emojiToggle')) {
+    emojiPicker.classList.add('hidden');
+  }
+  if (e.target === profileModal) {
+    closeProfileModal();
+  }
+});
+
+function openProfileModal() {
+  profileName.value = profile.name || usernameInput.value || 'Гость';
+  profileStatus.value = profile.status || 'На связи';
+  profileBio.value = profile.bio || '';
+  profileModal.classList.remove('hidden');
+}
+
+function closeProfileModal() {
+  profileModal.classList.add('hidden');
+}
+
+function saveProfile() {
+  profile = {
+    name: (profileName.value || 'Гость').trim().slice(0, 30),
+    status: (profileStatus.value || 'На связи').trim().slice(0, 60),
+    bio: (profileBio.value || '').trim().slice(0, 160)
+  };
+  usernameInput.value = profile.name || 'Гость';
+  onlineCount.textContent = `${onlineUsers} участников онлайн • ${profile.status || 'На связи'}`;
+  localStorage.setItem('pulse-username', usernameInput.value || 'Гость');
+  localStorage.setItem('pulse-profile', JSON.stringify(profile));
+  closeProfileModal();
+  showToast('Профиль сохранен');
 }
 
 // ── Receive messages ──────────────────────────────────
@@ -212,6 +393,10 @@ function appendMessage(msg, animate = true) {
   if (msg.mediaUrl) {
     if (msg.mediaType === 'image') {
       contentHTML = `<img class="msg-img" src="${msg.mediaUrl}" alt="изображение" loading="lazy" />`;
+    } else if (msg.mediaType === 'voice' || msg.mediaType === 'audio') {
+      contentHTML = `<audio class="msg-audio" src="${msg.mediaUrl}" controls preload="metadata"></audio>`;
+    } else if (msg.mediaType === 'circle') {
+      contentHTML = `<video class="msg-circle" src="${msg.mediaUrl}" controls autoplay loop muted playsinline preload="metadata"></video>`;
     } else if (msg.mediaType === 'video') {
       contentHTML = `<video class="msg-video" src="${msg.mediaUrl}" controls preload="metadata"></video>`;
     } else {
@@ -273,7 +458,14 @@ function appendMessage(msg, animate = true) {
 
 // ── Update sidebar preview ────────────────────────────
 function updateChatPreview(msg) {
-  const preview = msg.text || (msg.mediaType === 'image' ? '📷 Изображение' : msg.mediaType === 'video' ? '🎬 Видео' : '📎 Файл');
+  const mediaPreviewMap = {
+    image: '📷 Изображение',
+    video: '🎬 Видео',
+    voice: '🎤 Голосовое',
+    audio: '🎵 Аудио',
+    circle: '🔵 Кружок'
+  };
+  const preview = msg.text || mediaPreviewMap[msg.mediaType] || '📎 Файл';
   generalPreview.textContent = `${msg.user}: ${preview}`;
   generalTime.textContent = formatTime(new Date(msg.createdAt));
 }
@@ -364,8 +556,9 @@ function stringToHue(str) {
 // ── Online count simulation ───────────────────────────
 socket.on('connect', () => {
   onlineUsers = Math.floor(Math.random() * 8) + 2;
-  onlineCount.textContent = `${onlineUsers} участников онлайн`;
+  onlineCount.textContent = `${onlineUsers} участников онлайн • ${profile.status || 'На связи'}`;
 });
 
 // Focus input on load
+initEmojiPicker();
 messageInput.focus();
